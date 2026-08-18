@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road TypeRacer - Cyber Edition</title>
+    <!-- Gamer/Racer Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Title & Status -->
+        <div class="header-bar">
+            <h1 class="racer-title">⚡ ROAD TYPERACER ⚡</h1>
+            <div id="status">STATUS: <span id="server-status">INITIALIZING...</span></div>
+        </div>
+
+        <!-- Cyberpunk Racer HUD Dashboard -->
+        <div class="hud-container">
+            <div class="hud-card">
+                <span class="hud-label">SCORE</span>
+                <span class="hud-value score-text" id="scoreVal">0</span>
+            </div>
+            <div class="hud-card">
+                <span class="hud-label">ACCURACY</span>
+                <span class="hud-value acc-text" id="accuracyVal">100%</span>
+            </div>
+            <div class="hud-card">
+                <span class="hud-label">DAMAGE / MISSED</span>
+                <span class="hud-value missed-text" id="missedVal">0 / 25</span>
+            </div>
+        </div>
+
+        <!-- Road Canvas Area -->
+        <div class="canvas-wrapper">
+            <canvas id="roadCanvas" width="800" height="400"></canvas>
+            <div class="speed-lines-overlay"></div>
+        </div>
+
+        <!-- Controls Console -->
+        <div class="input-container">
+            <div class="select-wrapper">
+                <select id="difficultySelect">
+                    <option value="easy" selected>🟢 CLASS: EASY</option>
+                    <option value="medium">🟡 CLASS: MEDIUM</option>
+                    <option value="hard">🔴 CLASS: HARD</option>
+                </select>
+            </div>
+            <input type="text" id="typeInput" placeholder="TYPE HERE TO OVERTAKE..." autocomplete="off" disabled />
+            <button id="pauseBtn" class="racer-btn pause-btn" disabled>PAUSE</button>
+            <button id="startBtn" class="racer-btn">ENGINE START</button>
+        </div>
+
+        <!-- Hall of Fame Leaderboard -->
+        <div class="leaderboard-section">
+            <h3 class="leaderboard-title">🏆 HALL OF FAME - TOP DRIVERS</h3>
+            <ol id="leaderboardList"></ol>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">CRASHED!</h2>
+            <p class="modal-subtitle">MAX DAMAGE REACHED (25 MISSED)</p>
+            <div class="modal-stats">
+                <div>FINAL SCORE: <span id="finalScore">0</span></div>
+                <div>ACCURACY: <span id="finalAccuracy">100%</span></div>
+            </div>
+            <input type="text" id="playerNameInput" placeholder="ENTER DRIVER CALLSIGN" maxlength="15" />
+            <button id="submitScoreBtn" class="racer-btn">SUBMIT & RESTART</button>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

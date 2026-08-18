@@ -1,0 +1,305 @@
+/* --- Global Theme & Fonts --- */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(circle at center, #6c73ab 0%, #080911 100%);
+    color: #503131;
+    font-family: 'Rajdhani', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* --- Main Gaming Cabinet Container --- */
+#game-container {
+    text-align: center;
+    border: 2px solid #00f0ff;
+    padding: 24px;
+    border-radius: 16px;
+    background-color: #0d0f1d;
+    background-image: 
+        radial-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(13, 15, 29, 0.95), rgba(5, 6, 12, 0.98));
+    background-size: 20px 20px, 100% 100%;
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.1);
+    width: 860px;
+}
+
+/* --- Header Section --- */
+.header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.racer-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    margin: 0;
+    color: #ff0055;
+    text-shadow: 0 0 10px rgba(255, 0, 85, 0.7), 0 0 20px rgba(255, 0, 85, 0.4);
+    letter-spacing: 2px;
+}
+
+#status {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #8a99ad;
+}
+
+#server-status {
+    color: #00f0ff;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+/* --- Futuristic HUD Cards --- */
+.hud-container {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.hud-card {
+    flex: 1;
+    background: rgba(18, 22, 41, 0.8);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.hud-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    color: #8a99ad;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+}
+
+.hud-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.score-text {
+    color: #ffcc00;
+    text-shadow: 0 0 10px rgba(255, 204, 0, 0.6);
+}
+
+.acc-text {
+    color: #00ff66;
+    text-shadow: 0 0 10px rgba(0, 255, 102, 0.6);
+}
+
+.missed-text {
+    color: #ff0055;
+    text-shadow: 0 0 10px rgba(255, 0, 85, 0.6);
+}
+
+/* --- Canvas Road Container --- */
+.canvas-wrapper {
+    position: relative;
+    border: 2px solid #00f0ff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+canvas {
+    display: block;
+    background-color: #05060a;
+}
+
+/* --- Controls & Input Box --- */
+.input-container {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+#difficultySelect {
+    font-family: 'Orbitron', sans-serif;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 2px solid #ffcc00;
+    border-radius: 8px;
+    background-color: #121629;
+    color: #ffcc00;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+}
+
+#typeInput {
+    flex: 1;
+    padding: 12px 18px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    border: 2px solid #00f0ff;
+    border-radius: 8px;
+    background-color: #080a14;
+    color: #00f0ff;
+    outline: none;
+    box-shadow: inset 0 0 8px rgba(0, 240, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+#typeInput:focus {
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.7), inset 0 0 12px rgba(0, 240, 255, 0.4);
+}
+
+#typeInput:disabled {
+    opacity: 0.4;
+    border-color: #334155;
+    cursor: not-allowed;
+}
+
+.racer-btn {
+    font-family: 'Orbitron', sans-serif;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 900;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #ff0055 0%, #ff5500 100%);
+    color: #ffffff;
+    cursor: pointer;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.racer-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 0 25px rgba(255, 0, 85, 0.8);
+}
+
+.racer-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.pause-btn {
+    background: linear-gradient(135deg, #00f0ff 0%, #0077ff 100%);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+    color: #080a14;
+}
+
+.pause-btn:hover:not(:disabled) {
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.8);
+}
+
+/* --- Leaderboard Section --- */
+.leaderboard-section {
+    margin-top: 22px;
+    text-align: left;
+    background: rgba(12, 15, 29, 0.9);
+    padding: 14px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.leaderboard-title {
+    font-family: 'Orbitron', sans-serif;
+    margin: 0 0 10px 0;
+    color: #00f0ff;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+}
+
+#leaderboardList {
+    margin: 0;
+    padding-left: 20px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+#leaderboardList li {
+    margin-bottom: 4px;
+}
+
+/* --- Gaming Modal --- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(5, 6, 12, 0.85);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: #0d0f1d;
+    padding: 32px;
+    border-radius: 12px;
+    border: 2px solid #ff0055;
+    box-shadow: 0 0 35px rgba(255, 0, 85, 0.6);
+    text-align: center;
+    width: 360px;
+}
+
+.modal-title {
+    font-family: 'Orbitron', sans-serif;
+    color: #ff0055;
+    font-size: 28px;
+    font-weight: 900;
+    margin: 0 0 6px 0;
+    text-shadow: 0 0 12px rgba(255, 0, 85, 0.7);
+}
+
+.modal-subtitle {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    color: #8a99ad;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+}
+
+.modal-stats {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: #00f0ff;
+    margin-bottom: 20px;
+    line-height: 1.8;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 12px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    background: #05060a;
+    color: #ffcc00;
+    border: 1px solid #ffcc00;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    text-align: center;
+    outline: none;
+}
