@@ -303,3 +303,78 @@ canvas {
     text-align: center;
     outline: none;
 }
+
+/* --- Responsive Design & Screen Scaling --- */
+
+/* Laptops & Medium Screens (max-width: 900px) */
+@media screen and (max-width: 900px) {
+    #game-container {
+        width: 95%;
+        padding: 16px;
+    }
+
+    .canvas-wrapper canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    .racer-title {
+        font-size: 20px;
+    }
+
+    .hud-value {
+        font-size: 18px;
+    }
+
+    #typeInput {
+        font-size: 14px;
+        padding: 10px 14px;
+    }
+
+    .racer-btn {
+        padding: 10px 16px;
+        font-size: 12px;
+    }
+}
+
+/* Tablets & Mobile Screens (max-width: 600px) */
+@media screen and (max-width: 600px) {
+    #game-container {
+        width: 100%;
+        border-radius: 0;
+        border: none;
+        padding: 12px;
+    }
+
+    .header-bar {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .hud-container {
+        gap: 8px;
+    }
+
+    .hud-card {
+        padding: 6px;
+    }
+
+    .hud-label {
+        font-size: 9px;
+    }
+
+    .hud-value {
+        font-size: 16px;
+    }
+
+    .input-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #difficultySelect, 
+    #typeInput, 
+    .racer-btn {
+        width: 100%;
+    }
+}
