@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let wordQueue = [];
     let activeWords = [];
     let usedWords = new Set();
-    let lastLaneY = 280; // Toggle state for top (120) / bottom (280) zigzag pattern
+    let lastLaneY = 280;
     let spawnTimer = null;
     
     let missedCount = 0;
@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ROAD_HEIGHT = canvas.height - 80;
     const FINISH_LINE_X = canvas.width - 40;
 
-    // Configure difficulty speed & spawn rate
     function configureDifficulty(selectedDifficulty) {
         if (selectedDifficulty === "hard") {
             wordSpeed = 0.8;
@@ -58,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Fetch words based on difficulty
     async function fetchWords(difficulty = "easy") {
         try {
             const res = await fetch(`/api/words?difficulty=${difficulty}&count=40`);
@@ -70,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Load Leaderboard from backend
     async function loadLeaderboard() {
         try {
             const res = await fetch('/api/leaderboard');
@@ -91,11 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Smooth, Non-blocking Zigzag Spawning
     function spawnWord() {
         if (!isGameRunning || isGamePaused) return;
 
-        // Pre-fetch more words asynchronously when queue gets low
         const currentDiff = difficultySelect.value;
         if (wordQueue.length < 10) {
             fetchWords(currentDiff).then(newWords => {
@@ -105,23 +100,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         usedWords.add(w);
                     }
                 });
-                // Reset set if memory gets full to prevent stopping
                 if (usedWords.size > 500) usedWords.clear();
             });
         }
 
         if (wordQueue.length === 0) return;
 
-        // Alternate Top (120) and Bottom (280) lanes smoothly
         const nextLaneY = lastLaneY === 120 ? 280 : 120;
-
-        // Ensure there is at least 180px of clear road in front before placing a new word
         const wordsInLane = activeWords.filter(w => w.y === nextLaneY);
         if (wordsInLane.length > 0) {
             const trailingWord = wordsInLane[wordsInLane.length - 1];
-            if (trailingWord.x < 180) {
-                return; // Wait for space without freezing the frame
-            }
+            if (trailingWord.x < 180) return;
         }
 
         const text = wordQueue.shift();
@@ -130,12 +119,11 @@ document.addEventListener('DOMContentLoaded', () => {
         activeWords.push({
             id: Date.now() + Math.random(),
             text: text,
-            x: -50, // Smoothly slide in from off-screen left
+            x: -50,
             y: nextLaneY
         });
     }
 
-    // Update HUD Metrics
     function updateHUD() {
         scoreVal.textContent = score;
         missedVal.textContent = `${missedCount} / ${MAX_MISSED}`;
@@ -148,86 +136,92 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Target Selection: Get active word closest to finish line
     function getTargetWord() {
         if (activeWords.length === 0) return null;
+        const currentVal = typeInput.value.trim().toLowerCase();
+        
+        // Match prefix if user started typing
+        if (currentVal.length > 0) {
+            const prefixMatch = activeWords.find(w => w.text.toLowerCase().startsWith(currentVal));
+            if (prefixMatch) return prefixMatch;
+        }
+        
         return activeWords.reduce((closest, word) => word.x > closest.x ? word : closest, activeWords[0]);
     }
 
-    // Unified Typing Handler for Mobile, Tablet & Desktop
+    // Direct, Universal Input Handler for Mobile, Tablet & Desktop
     typeInput.addEventListener('input', () => {
         if (!isGameRunning || isGamePaused) return;
 
-        // Force lowercase across virtual keyboards / IME
-        if (typeInput.value !== typeInput.value.toLowerCase()) {
-            const start = typeInput.selectionStart;
-            const end = typeInput.selectionEnd;
-            typeInput.value = typeInput.value.toLowerCase();
-            typeInput.setSelectionRange(start, end);
+        const raw = typeInput.value;
+        const cleanTyped = raw.trim().toLowerCase();
+
+        // Automatically convert any capital letters to lowercase
+        if (raw !== raw.toLowerCase()) {
+            const pos = typeInput.selectionStart;
+            typeInput.value = raw.toLowerCase();
+            typeInput.setSelectionRange(pos, pos);
         }
 
-        const rawVal = typeInput.value;
-        const typedText = rawVal.trim();
-        const targetWord = getTargetWord();
-
-        if (!targetWord) {
-            if (rawVal.endsWith(' ') || rawVal.endsWith('\n')) {
-                typeInput.value = "";
+        if (!cleanTyped) {
+            if (raw.includes(' ') || raw.includes('\n')) {
+                typeInput.value = '';
             }
             return;
         }
 
-        // If the mobile keyboard entered space or newline
-        if (rawVal.endsWith(' ') || rawVal.endsWith('\n')) {
-            if (typedText === targetWord.text) {
-                totalTypedChars += targetWord.text.length;
-                correctTypedChars += targetWord.text.length;
-                score += 20;
-                activeWords = activeWords.filter(w => w.id !== targetWord.id);
-            } else if (typedText.length > 0) {
-                score = Math.max(0, score - 10); // penalty for incorrect submission
-            }
-            typeInput.value = "";
+        // 1. Instant full-word match check across ANY active word
+        const matchedIndex = activeWords.findIndex(w => w.text.toLowerCase() === cleanTyped);
+        if (matchedIndex !== -1) {
+            score += 20;
+            totalTypedChars += cleanTyped.length;
+            correctTypedChars += cleanTyped.length;
+            activeWords.splice(matchedIndex, 1);
+            typeInput.value = '';
             updateHUD();
             return;
         }
 
-        // Normal character by character typing
-        totalTypedChars++;
-        const charIndex = typedText.length - 1;
-        if (charIndex >= 0 && charIndex < targetWord.text.length && typedText[charIndex] === targetWord.text[charIndex]) {
-            correctTypedChars++;
+        // 2. Space / Enter submission on mobile
+        if (raw.endsWith(' ') || raw.endsWith('\n')) {
+            score = Math.max(0, score - 10);
+            typeInput.value = '';
+            updateHUD();
+            return;
         }
 
-        // Exact match check (auto-overtakes without needing space)
-        if (typedText === targetWord.text) {
-            score += 20;
-            activeWords = activeWords.filter(w => w.id !== targetWord.id);
-            typeInput.value = "";
+        // 3. Track character accuracy against the active target
+        const target = getTargetWord();
+        if (target) {
+            totalTypedChars++;
+            const charIdx = cleanTyped.length - 1;
+            if (charIdx < target.text.length && cleanTyped[charIdx] === target.text[charIdx]) {
+                correctTypedChars++;
+            }
         }
-
         updateHUD();
     });
 
-    // Hardware PC Keyboard Support (Space / Enter to submit or clear)
+    // Hardware PC Keyboard Support (Space / Enter)
     typeInput.addEventListener('keydown', (e) => {
         if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
-            const candidate = typeInput.value.trim().toLowerCase();
-            const targetWord = getTargetWord();
+            const clean = typeInput.value.trim().toLowerCase();
+            const matchedIndex = activeWords.findIndex(w => w.text.toLowerCase() === clean);
 
-            if (targetWord && candidate === targetWord.text) {
+            if (matchedIndex !== -1) {
                 score += 20;
-                activeWords = activeWords.filter(w => w.id !== targetWord.id);
-            } else if (candidate.length > 0) {
+                totalTypedChars += clean.length;
+                correctTypedChars += clean.length;
+                activeWords.splice(matchedIndex, 1);
+            } else if (clean.length > 0) {
                 score = Math.max(0, score - 10);
             }
-            typeInput.value = "";
+            typeInput.value = '';
             updateHUD();
         }
     });
 
-    // Draw Cyberpunk Road Background
     function drawRoad() {
         const width = canvas.width;
         const height = canvas.height;
@@ -287,7 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Update word movement & check missed penalties
     function updateWords() {
         for (let i = activeWords.length - 1; i >= 0; i--) {
             const word = activeWords[i];
@@ -298,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (word.x + textWidth >= FINISH_LINE_X) {
                 missedCount++;
-                score = Math.max(0, score - 10); // -10 points for missed word
+                score = Math.max(0, score - 10);
                 activeWords.splice(i, 1);
                 updateHUD();
 
@@ -310,11 +303,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Render word badges
     function drawWords() {
         ctx.font = "bold 20px 'Orbitron', monospace";
         const currentTarget = getTargetWord();
-        const currentTyped = typeInput.value;
+        const currentTyped = typeInput.value.trim().toLowerCase();
 
         activeWords.forEach(word => {
             const textWidth = ctx.measureText(word.text).width;
@@ -339,17 +331,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             let currentX = word.x;
-
             for (let i = 0; i < word.text.length; i++) {
                 const char = word.text[i];
                 const charWidth = ctx.measureText(char).width;
 
                 if (isTarget && i < currentTyped.length) {
-                    if (currentTyped[i] === char) {
-                        ctx.fillStyle = "#00ff66";
-                    } else {
-                        ctx.fillStyle = "#ff0055";
-                    }
+                    ctx.fillStyle = (currentTyped[i] === char) ? "#00ff66" : "#ff0055";
                 } else {
                     ctx.fillStyle = "#ffffff";
                 }
@@ -366,7 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Render Pause Overlay
     function drawPauseOverlay() {
         ctx.fillStyle = "rgba(5, 6, 12, 0.75)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -385,7 +371,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.textAlign = "left";
     }
 
-    // Main Game Loop
     function render() {
         if (isGameRunning && !isGamePaused) {
             dashOffset = (dashOffset + 2.5) % 40;
@@ -402,7 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(render);
     }
 
-    // Toggle Pause / Resume
     function togglePause() {
         if (!isGameRunning) return;
 
@@ -424,7 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pauseBtn.addEventListener('click', togglePause);
 
-    // End Game Handler
     function endGame() {
         isGameRunning = false;
         isGamePaused = false;
@@ -442,7 +425,6 @@ document.addEventListener('DOMContentLoaded', () => {
         gameOverModal.classList.remove('hidden');
     }
 
-    // Submit Score Handler
     submitScoreBtn.addEventListener('click', async () => {
         const name = playerNameInput.value.trim() || "DRIVER_X";
         const finalAcc = totalTypedChars === 0 ? 100 : Math.max(0, Math.round((correctTypedChars / totalTypedChars) * 100));
@@ -460,14 +442,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             gameOverModal.classList.add('hidden');
             loadLeaderboard();
-            
             startGame();
         } catch (err) {
             console.error("Failed to submit score:", err);
         }
     });
 
-    // Start Game
     async function startGame() {
         isGameRunning = false;
         isGamePaused = false;
@@ -504,7 +484,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startBtn.addEventListener('click', startGame);
 
-    // Initial Setup Check
     fetch('/api/words?count=5')
         .then(res => res.json())
         .then(() => {
@@ -516,11 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
             statusEl.style.color = "#ff0055";
         });
 
-    loadLeaderboard();
-    render();
-});
-
-// Keep canvas and input centered above mobile keyboard
+    // Keep canvas and input centered above mobile keyboard SAFELY inside DOMContentLoaded
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', () => {
             if (document.activeElement === typeInput) {
@@ -528,3 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    loadLeaderboard();
+    render();
+});
