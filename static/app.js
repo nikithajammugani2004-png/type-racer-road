@@ -176,16 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
             || (navigator.maxTouchPoints > 0);
         let raw = typeInput.value;
 
-        // On mobile or tablet: capitalize the first letter automatically as you type
-        if (isMobileOrTablet && raw.length > 0) {
-            const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
-            if (raw !== capitalized) {
-                const start = typeInput.selectionStart;
-                const end = typeInput.selectionEnd;
-                typeInput.value = capitalized;
-                typeInput.setSelectionRange(start, end);
-                raw = capitalized;
-            }
+        // Let mobile keyboard capitalize naturally without resetting input buffer
+        if (isMobileOrTablet && raw.length === 1 && raw !== raw.toUpperCase()) {
+            typeInput.value = raw.toUpperCase();
+            raw = typeInput.value;
         }
 
         const cleanTyped = raw.trim();
