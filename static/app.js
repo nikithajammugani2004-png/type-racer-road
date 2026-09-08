@@ -151,11 +151,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Direct, Universal Input Handler for Mobile, Tablet & Desktop
     typeInput.addEventListener('input', () => {
-        if (!isGameRunning || isGamePaused) return;
+        // Auto-start race if player begins typing before hitting ENGINE START
+        if (!isGameRunning && !isGamePaused) {
+            startGame();
+        }
+
+        if (isGamePaused) return;
 
         const raw = typeInput.value;
         const cleanTyped = raw.trim().toLowerCase();
-
         // Automatically convert any capital letters to lowercase
         if (raw !== raw.toLowerCase()) {
             const pos = typeInput.selectionStart;
