@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let text = wordQueue.shift();
         lastLaneY = nextLaneY;
 
-        // Mobile/Tablet: capitalize the first letter. Laptop/PC: keep all lowercase.
+        // On mobile or tablet: capitalize first letter. On laptop or PC: keep all lowercase
         const isMobileOrTablet = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 800);
         if (isMobileOrTablet && text.length > 0) {
             text = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
@@ -171,10 +171,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const isMobileOrTablet = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 800);
         let raw = typeInput.value;
 
-        // On mobile/tab, if user typed lowercase first, auto-capitalize it to match the badge
+        // On mobile/tablet: enforce first letter Capitalized
         if (isMobileOrTablet && raw.length > 0) {
-            raw = raw.charAt(0).toUpperCase() + raw.slice(1);
-            typeInput.value = raw;
+            const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
+            if (raw !== capitalized) {
+                const start = typeInput.selectionStart;
+                const end = typeInput.selectionEnd;
+                typeInput.value = capitalized;
+                typeInput.setSelectionRange(start, end);
+                raw = capitalized;
+            }
         }
 
         const cleanTyped = raw.trim();
@@ -185,8 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Direct exact match
-        const matchedIndex = activeWords.findIndex(w => w.text === cleanTyped);
+        // Match case-insensitively so both capitalized and lowercase clear immediately
+        const matchedIndex = activeWords.findIndex(
+            w => w.text.toLowerCase() === cleanTyped.toLowerCase()
+        );
 
         if (matchedIndex !== -1) {
             score += 20;
