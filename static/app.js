@@ -113,8 +113,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (trailingWord.x < 180) return;
         }
 
-        const text = wordQueue.shift();
+        let text = wordQueue.shift();
         lastLaneY = nextLaneY;
+
+        // Mobile/Tablet: capitalize the first letter. Laptop/PC: keep all lowercase.
+        const isMobileOrTablet = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 800);
+        if (isMobileOrTablet && text.length > 0) {
+            text = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+        } else {
+            text = text.toLowerCase();
+        }
 
         activeWords.push({
             id: Date.now() + Math.random(),
@@ -153,24 +161,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 800);
 
     // Universal typing handler for Laptop/PC & Mobile/Tablet
+    // Universal typing handler for Laptop/PC & Mobile/Tablet
     typeInput.addEventListener('input', () => {
         if (!isGameRunning && !isGamePaused) {
             startGame();
         }
         if (isGamePaused) return;
 
+        const isMobileOrTablet = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 800);
         let raw = typeInput.value;
 
-        // Only on mobile/tablet: auto-fix accidental first-letter auto-capitalization
-        if (isMobileDevice && raw.length > 0 && raw[0] !== raw[0].toLowerCase()) {
-            const start = typeInput.selectionStart;
-            const end = typeInput.selectionEnd;
-            typeInput.value = raw.toLowerCase();
-            typeInput.setSelectionRange(start, end);
-            raw = typeInput.value;
+        // On mobile/tab, if user typed lowercase first, auto-capitalize it to match the badge
+        if (isMobileOrTablet && raw.length > 0) {
+            raw = raw.charAt(0).toUpperCase() + raw.slice(1);
+            typeInput.value = raw;
         }
 
-        const cleanTyped = raw.trim().toLowerCase();
+        const cleanTyped = raw.trim();
         if (!cleanTyped) {
             if (raw.endsWith(' ') || raw.endsWith('\n')) {
                 typeInput.value = '';
@@ -178,11 +185,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Case-insensitive match against ANY active word on the road
-        const matchedIndex = activeWords.findIndex(w => w.text.toLowerCase() === cleanTyped);
+        // Direct exact match
+        const matchedIndex = activeWords.findIndex(w => w.text === cleanTyped);
 
         if (matchedIndex !== -1) {
-            // Match found! Award points
             score += 20;
             totalTypedChars += cleanTyped.length;
             correctTypedChars += cleanTyped.length;
@@ -192,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Spacebar/Enter key submission handling
+        // Space or Enter penalty submission
         if (raw.endsWith(' ') || raw.endsWith('\n')) {
             score = Math.max(0, score - 10);
             typeInput.value = '';
