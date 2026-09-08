@@ -179,6 +179,7 @@ canvas {
     font-family: 'Orbitron', sans-serif;
     font-size: 16px;
     letter-spacing: 1px;
+    text-transform: lowercase; /* Forces text to display as lowercase */
     border: 2px solid #00f0ff;
     border-radius: 8px;
     background-color: #080a14;
