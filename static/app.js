@@ -158,9 +158,13 @@ document.addEventListener('DOMContentLoaded', () => {
     typeInput.addEventListener('input', () => {
         if (!isGameRunning || isGamePaused) return;
 
-        const typedText = typeInput.value.trim();
-        const targetWord = getTargetWord();
+        // Auto-fix mobile/tablet automatic initial capitalization
+        if (typeInput.value.length === 1 && typeInput.value !== typeInput.value.toLowerCase()) {
+            typeInput.value = typeInput.value.toLowerCase();
+        }
 
+        const typedText = typeInput.value.trim().toLowerCase();
+        const targetWord = getTargetWord();
         if (!targetWord) return;
 
         totalTypedChars++;
