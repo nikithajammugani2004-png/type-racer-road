@@ -116,8 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let text = wordQueue.shift();
         lastLaneY = nextLaneY;
 
-        // On mobile or tablet: capitalize first letter. On laptop or PC: keep all lowercase
-        const isMobileOrTablet = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 800);
+        // Check user-agent directly to reliably catch any mobile or tablet device
+        const isMobileOrTablet = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+            || ('ontouchstart' in window) 
+            || (navigator.maxTouchPoints > 0);
+
         if (isMobileOrTablet && text.length > 0) {
             text = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
         } else {
@@ -168,10 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (isGamePaused) return;
 
-        const isMobileOrTablet = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 800);
+        const isMobileOrTablet = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+            || ('ontouchstart' in window) 
+            || (navigator.maxTouchPoints > 0);
         let raw = typeInput.value;
 
-        // On mobile/tablet: enforce first letter Capitalized
+        // On mobile or tablet: capitalize the first letter automatically as you type
         if (isMobileOrTablet && raw.length > 0) {
             const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
             if (raw !== capitalized) {
