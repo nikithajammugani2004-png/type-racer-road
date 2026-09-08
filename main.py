@@ -34,9 +34,8 @@ class ScoreSubmission(BaseModel):
 def get_words(difficulty: str = "easy", count: int = 40):
     pool = WORD_POOLS.get(difficulty.lower(), WORD_POOLS["easy"])
     selected = random.sample(pool, min(count, len(pool)))
-    # Capitalize the first letter of each word like Python's .capitalize()
-    capitalized_words = [w.capitalize() for w in selected]
-    return {"words": capitalized_words}
+    return {"words": selected}
+
 @app.post("/api/leaderboard")
 def submit_score(submission: ScoreSubmission):
     entry = {

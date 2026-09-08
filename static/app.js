@@ -150,30 +150,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Direct, Universal Input Handler for Mobile, Tablet & Desktop
+    const isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 800);
+
+    // Universal typing handler for Laptop/PC & Mobile/Tablet
     typeInput.addEventListener('input', () => {
         if (!isGameRunning && !isGamePaused) {
             startGame();
         }
         if (isGamePaused) return;
 
-        let val = typeInput.value;
-        if (!val) return;
+        let raw = typeInput.value;
 
-        // Automatically ensure first letter is capitalized on both PC and mobile
-        if (val.length > 0) {
-            val = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
-            typeInput.value = val;
+        // Only on mobile/tablet: auto-fix accidental first-letter auto-capitalization
+        if (isMobileDevice && raw.length > 0 && raw[0] !== raw[0].toLowerCase()) {
+            const start = typeInput.selectionStart;
+            const end = typeInput.selectionEnd;
+            typeInput.value = raw.toLowerCase();
+            typeInput.setSelectionRange(start, end);
+            raw = typeInput.value;
         }
 
-        const cleanTyped = val.trim();
-        if (!cleanTyped) return;
+        const cleanTyped = raw.trim().toLowerCase();
+        if (!cleanTyped) {
+            if (raw.endsWith(' ') || raw.endsWith('\n')) {
+                typeInput.value = '';
+            }
+            return;
+        }
 
-        // Check if typed text matches any active word (case-insensitive)
-        const matchedIndex = activeWords.findIndex(
-            w => w.text.toLowerCase() === cleanTyped.toLowerCase()
-        );
+        // Case-insensitive match against ANY active word on the road
+        const matchedIndex = activeWords.findIndex(w => w.text.toLowerCase() === cleanTyped);
 
         if (matchedIndex !== -1) {
+            // Match found! Award points
             score += 20;
             totalTypedChars += cleanTyped.length;
             correctTypedChars += cleanTyped.length;
@@ -183,8 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Spacebar or Enter submission fallback
-        if (typeInput.value.endsWith(' ') || typeInput.value.endsWith('\n')) {
+        // Spacebar/Enter key submission handling
+        if (raw.endsWith(' ') || raw.endsWith('\n')) {
             score = Math.max(0, score - 10);
             typeInput.value = '';
             updateHUD();
@@ -329,7 +338,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const charWidth = ctx.measureText(char).width;
 
                 if (isTarget && i < currentTyped.length) {
-                    ctx.fillStyle = (currentTyped[i] === char) ? "#00ff66" : "#ff0055";
+                    // Turn green even if mobile keyboard passes uppercase
+                    const isCharMatch = currentTyped[i].toLowerCase() === char.toLowerCase();
+                    ctx.fillStyle = isCharMatch ? "#00ff66" : "#ff0055";
                 } else {
                     ctx.fillStyle = "#ffffff";
                 }
