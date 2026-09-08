@@ -203,12 +203,28 @@ document.addEventListener('DOMContentLoaded', () => {
             typeInput.value = '';
             updateHUD();
             return;
+        }if (matchedIndex !== -1) {
+            score += 20;
+            totalTypedChars += cleanTyped.length;
+            correctTypedChars += cleanTyped.length;
+            activeWords.splice(matchedIndex, 1);
+            typeInput.value = '';
+            if (isMobileOrTablet) {
+                typeInput.blur();
+                typeInput.focus();
+            }
+            updateHUD();
+            return;
         }
 
         // Space or Enter penalty submission
         if (raw.endsWith(' ') || raw.endsWith('\n')) {
             score = Math.max(0, score - 10);
             typeInput.value = '';
+            if (isMobileOrTablet) {
+                typeInput.blur();
+                typeInput.focus();
+            }
             updateHUD();
             return;
         }
