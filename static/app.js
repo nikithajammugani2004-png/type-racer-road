@@ -151,31 +151,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Direct, Universal Input Handler for Mobile, Tablet & Desktop
     typeInput.addEventListener('input', () => {
-        // Auto-start race if player begins typing before hitting ENGINE START
         if (!isGameRunning && !isGamePaused) {
             startGame();
         }
-
         if (isGamePaused) return;
 
-        const raw = typeInput.value;
-        const cleanTyped = raw.trim().toLowerCase();
-        // Automatically convert any capital letters to lowercase
-        if (raw !== raw.toLowerCase()) {
-            const pos = typeInput.selectionStart;
-            typeInput.value = raw.toLowerCase();
-            typeInput.setSelectionRange(pos, pos);
+        let val = typeInput.value;
+        if (!val) return;
+
+        // Automatically ensure first letter is capitalized on both PC and mobile
+        if (val.length > 0) {
+            val = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+            typeInput.value = val;
         }
 
-        if (!cleanTyped) {
-            if (raw.includes(' ') || raw.includes('\n')) {
-                typeInput.value = '';
-            }
-            return;
-        }
+        const cleanTyped = val.trim();
+        if (!cleanTyped) return;
 
-        // 1. Instant full-word match check across ANY active word
-        const matchedIndex = activeWords.findIndex(w => w.text.toLowerCase() === cleanTyped);
+        // Check if typed text matches any active word (case-insensitive)
+        const matchedIndex = activeWords.findIndex(
+            w => w.text.toLowerCase() === cleanTyped.toLowerCase()
+        );
+
         if (matchedIndex !== -1) {
             score += 20;
             totalTypedChars += cleanTyped.length;
@@ -186,23 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 2. Space / Enter submission on mobile
-        if (raw.endsWith(' ') || raw.endsWith('\n')) {
+        // Spacebar or Enter submission fallback
+        if (typeInput.value.endsWith(' ') || typeInput.value.endsWith('\n')) {
             score = Math.max(0, score - 10);
             typeInput.value = '';
             updateHUD();
             return;
         }
 
-        // 3. Track character accuracy against the active target
-        const target = getTargetWord();
-        if (target) {
-            totalTypedChars++;
-            const charIdx = cleanTyped.length - 1;
-            if (charIdx < target.text.length && cleanTyped[charIdx] === target.text[charIdx]) {
-                correctTypedChars++;
-            }
-        }
+        totalTypedChars++;
         updateHUD();
     });
 
