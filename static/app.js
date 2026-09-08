@@ -154,28 +154,54 @@ document.addEventListener('DOMContentLoaded', () => {
         return activeWords.reduce((closest, word) => word.x > closest.x ? word : closest, activeWords[0]);
     }
 
-    // Typing Event Handler with +20 / -10 Scoring Rules
+    // Unified Typing Handler for Mobile, Tablet & Desktop
     typeInput.addEventListener('input', () => {
         if (!isGameRunning || isGamePaused) return;
 
-        // Auto-fix mobile/tablet automatic initial capitalization
-        if (typeInput.value.length === 1 && typeInput.value !== typeInput.value.toLowerCase()) {
+        // Force lowercase across virtual keyboards / IME
+        if (typeInput.value !== typeInput.value.toLowerCase()) {
+            const start = typeInput.selectionStart;
+            const end = typeInput.selectionEnd;
             typeInput.value = typeInput.value.toLowerCase();
+            typeInput.setSelectionRange(start, end);
         }
 
-        const typedText = typeInput.value.trim().toLowerCase();
+        const rawVal = typeInput.value;
+        const typedText = rawVal.trim();
         const targetWord = getTargetWord();
-        if (!targetWord) return;
 
+        if (!targetWord) {
+            if (rawVal.endsWith(' ') || rawVal.endsWith('\n')) {
+                typeInput.value = "";
+            }
+            return;
+        }
+
+        // If the mobile keyboard entered space or newline
+        if (rawVal.endsWith(' ') || rawVal.endsWith('\n')) {
+            if (typedText === targetWord.text) {
+                totalTypedChars += targetWord.text.length;
+                correctTypedChars += targetWord.text.length;
+                score += 20;
+                activeWords = activeWords.filter(w => w.id !== targetWord.id);
+            } else if (typedText.length > 0) {
+                score = Math.max(0, score - 10); // penalty for incorrect submission
+            }
+            typeInput.value = "";
+            updateHUD();
+            return;
+        }
+
+        // Normal character by character typing
         totalTypedChars++;
-
         const charIndex = typedText.length - 1;
-        if (charIndex >= 0 && typedText[charIndex] === targetWord.text[charIndex]) {
+        if (charIndex >= 0 && charIndex < targetWord.text.length && typedText[charIndex] === targetWord.text[charIndex]) {
             correctTypedChars++;
         }
 
+        // Exact match check (auto-overtakes without needing space)
         if (typedText === targetWord.text) {
-            score += 20; // +20 points for typing correctly
+            score += 20;
             activeWords = activeWords.filter(w => w.id !== targetWord.id);
             typeInput.value = "";
         }
@@ -183,15 +209,21 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHUD();
     });
 
+    // Hardware PC Keyboard Support (Space / Enter to submit or clear)
     typeInput.addEventListener('keydown', (e) => {
         if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
-            // Penalty for clearing/submitting incorrect word
-            if (typeInput.value.trim().length > 0) {
-                score = Math.max(0, score - 10); // -10 points for wrong word submitted
-                updateHUD();
+            const candidate = typeInput.value.trim().toLowerCase();
+            const targetWord = getTargetWord();
+
+            if (targetWord && candidate === targetWord.text) {
+                score += 20;
+                activeWords = activeWords.filter(w => w.id !== targetWord.id);
+            } else if (candidate.length > 0) {
+                score = Math.max(0, score - 10);
             }
             typeInput.value = "";
+            updateHUD();
         }
     });
 
@@ -487,3 +519,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadLeaderboard();
     render();
 });
+
+// Keep canvas and input centered above mobile keyboard
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            if (document.activeElement === typeInput) {
+                window.scrollTo(0, 0);
+            }
+        });
+    }
