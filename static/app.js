@@ -57,34 +57,71 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const FALLBACK_WORDS = {
+        easy: ["neon", "cyber", "drive", "pulse", "grid", "turbo", "boost", "shift", "track", "drift", "pixel", "laser", "motor", "speed", "gear", "race", "nitro", "apex", "dash", "road", "lane", "fuel", "rush", "fast", "glow"],
+        medium: ["highway", "overtake", "velocity", "circuit", "accelerate", "phantom", "steering", "engine", "dashboard", "supercar", "redline", "cruising", "asphalt", "exhaust", "headlight", "gearbox", "speedway", "turbofan"],
+        hard: ["transmission", "aerodynamics", "turbocharged", "tachometer", "supercharged", "acceleration", "combustion", "hyperdrive", "telemetry", "electrify", "performance", "supercharger", "championship"]
+    };
+
+    function getLocalLeaderboard() {
+        try {
+            return JSON.parse(localStorage.getItem('typeracer_leaderboard') || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    function saveLocalLeaderboard(entries) {
+        try {
+            localStorage.setItem('typeracer_leaderboard', JSON.stringify(entries.slice(0, 10)));
+        } catch (e) {
+            console.error("Local storage error:", e);
+        }
+    }
+
     async function fetchWords(difficulty = "easy") {
         try {
-            const res = await fetch(`/api/words?difficulty=${difficulty}&count=40`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const res = await fetch(`/api/words?difficulty=${difficulty}&count=40`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            return data.words || [];
+            return data.words && data.words.length > 0 ? data.words : (FALLBACK_WORDS[difficulty] || FALLBACK_WORDS.easy);
         } catch (err) {
-            console.error("Failed to fetch words:", err);
-            return ["cyber", "turbo", "hyper", "neon", "drive", "circuit", "pulse", "matrix"];
+            console.warn("Backend word fetch fallback used:", err.message);
+            const pool = FALLBACK_WORDS[difficulty] || FALLBACK_WORDS.easy;
+            return [...pool].sort(() => 0.5 - Math.random());
         }
     }
 
     async function loadLeaderboard() {
+        let board = getLocalLeaderboard();
         try {
-            const res = await fetch('/api/leaderboard');
-            const data = await res.json();
-            leaderboardList.innerHTML = '';
-            
-            if (data.leaderboard && data.leaderboard.length > 0) {
-                data.leaderboard.forEach(entry => {
-                    const li = document.createElement('li');
-                    li.textContent = `${entry.player_name} — ${entry.score} PTS (${entry.accuracy}% ACC)`;
-                    leaderboardList.appendChild(li);
-                });
-            } else {
-                leaderboardList.innerHTML = '<li>No hall of fame scores recorded yet.</li>';
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            const res = await fetch('/api/leaderboard', { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.leaderboard && data.leaderboard.length > 0) {
+                    board = data.leaderboard;
+                    saveLocalLeaderboard(board);
+                }
             }
         } catch (err) {
-            console.error("Failed to load leaderboard:", err);
+            console.warn("Using cached/local leaderboard:", err.message);
+        }
+
+        leaderboardList.innerHTML = '';
+        if (board && board.length > 0) {
+            board.forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `${entry.player_name} — ${entry.score} PTS (${entry.accuracy}% ACC)`;
+                leaderboardList.appendChild(li);
+            });
+        } else {
+            leaderboardList.innerHTML = '<li>No hall of fame scores recorded yet.</li>';
         }
     }
 
@@ -461,24 +498,27 @@ document.addEventListener('DOMContentLoaded', () => {
     submitScoreBtn.addEventListener('click', async () => {
         const name = playerNameInput.value.trim() || "DRIVER_X";
         const finalAcc = totalTypedChars === 0 ? 100 : Math.max(0, Math.round((correctTypedChars / totalTypedChars) * 100));
+        const newEntry = { player_name: name, score: score, accuracy: finalAcc };
+
+        // Save locally first so highscore is never lost even if server is sleeping/restarting
+        const localBoard = getLocalLeaderboard();
+        localBoard.push(newEntry);
+        localBoard.sort((a, b) => b.score - a.score);
+        saveLocalLeaderboard(localBoard);
 
         try {
             await fetch('/api/leaderboard', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    player_name: name,
-                    score: score,
-                    accuracy: finalAcc
-                })
+                body: JSON.stringify(newEntry)
             });
-            
-            gameOverModal.classList.add('hidden');
-            loadLeaderboard();
-            startGame();
         } catch (err) {
-            console.error("Failed to submit score:", err);
+            console.warn("Saved score locally (server sync error):", err);
         }
+        
+        gameOverModal.classList.add('hidden');
+        loadLeaderboard();
+        startGame();
     });
 
     async function startGame() {
@@ -517,16 +557,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startBtn.addEventListener('click', startGame);
 
-    fetch('/api/words?count=5')
-        .then(res => res.json())
-        .then(() => {
-            statusEl.textContent = "ONLINE";
-            statusEl.style.color = "#00ff66";
-        })
-        .catch(() => {
-            statusEl.textContent = "OFFLINE";
-            statusEl.style.color = "#ff0055";
-        });
+    // Resilient server status monitor with progressive retry
+    function checkServerHealth(retries = 5, delay = 2500) {
+        fetch('/health')
+            .then(res => {
+                if (!res.ok) throw new Error();
+                return res.json();
+            })
+            .then(() => {
+                statusEl.textContent = "ONLINE";
+                statusEl.style.color = "#00ff66";
+            })
+            .catch(() => {
+                if (retries > 0) {
+                    statusEl.textContent = "CONNECTING...";
+                    statusEl.style.color = "#ffaa00";
+                    setTimeout(() => checkServerHealth(retries - 1, delay), delay);
+                } else {
+                    statusEl.textContent = "STANDBY (READY)";
+                    statusEl.style.color = "#00f0ff";
+                }
+            });
+    }
+    checkServerHealth();
 
     // Keep canvas and input centered above mobile keyboard SAFELY inside DOMContentLoaded
     if (window.visualViewport) {

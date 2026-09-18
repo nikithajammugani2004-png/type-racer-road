@@ -1,0 +1,22 @@
+name: Keep Render App Awake
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render free tier from sleeping (inactivity timeout is 15 min)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  ping-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Service
+        run: |
+          echo "Sending keep-alive ping to Render service..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "https://type-racer-road-k5q0.onrender.com/health")
+          echo "Render responded with HTTP status code: $RESPONSE"
+          if [ "$RESPONSE" -eq 200 ]; then
+            echo "✅ Service is awake and running smoothly!"
+          else
+            echo "⚠️ Unexpected response: $RESPONSE (Service may be waking up)"
+          fi

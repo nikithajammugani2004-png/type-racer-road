@@ -1,11 +1,30 @@
 import random
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from english_words import get_english_words_set
 
 app = FastAPI(title="Road TypeRacer")
+
+# Add caching middleware for static assets to boost load times
+@app.middleware("http")
+async def add_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static"):
+        response.headers["Cache-Control"] = "public, max-age=86400"
+    elif request.url.path == "/":
+        response.headers["Cache-Control"] = "public, max-age=300"
+    return response
+
+@app.get("/health")
+@app.head("/health")
+def health_check():
+    return {"status": "ok", "service": "road-typeracer"}
+
+@app.head("/")
+def head_root():
+    return Response(status_code=200)
 
 # Load word set
 RAW_WORDS = get_english_words_set(['web2'], lower=True, alpha=True)
